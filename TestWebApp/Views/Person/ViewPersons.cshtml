@@ -1,0 +1,153 @@
+﻿@model IEnumerable<TestWebApp.Model.Person>;
+@{
+    ViewData["Title"] = "View persons";
+    Layout = "_Layout";
+}
+<head>
+<meta charset="utf-8" />
+<title>Person List</title>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">All persons:</h1>
+        <table id="personsTable" class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Date of Birth</th>
+                    <th>Maried</th>
+                    <th>Phone</th>
+                    <th>Salary</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var person in Model)
+                {
+                    <tr data-id="@person.Id">
+                        <td>@person.Id</td>
+                        <td>
+                            <span class="read-only">@person.Name</span>
+                            <input type="text" class="form-control edit-mode" value="@person.Name" style="display:none;"/>
+                        </td>
+                        <td>
+                            <span class="read-only">@person.DateOfBirth.ToString("MM/dd/yyyy")</span>
+                            <input type="text" class="form-control edit-mode" value="@person.DateOfBirth.ToString("MM/dd/yyyy")" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="read-only">@(person.Maried ? "Yes" : "No")</span>
+                            <select class="form-control edit-mode" style="display:none;">
+                                <option value="true" @(person.Maried ? "selected" : "")>Yes</option>
+                                <option value="false" @(!person.Maried ? "selected" : "")>No</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="read-only">@person.Phone</span>
+                            <input type="text" class="form-control edit-mode" value="@person.Phone" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="read-only">@person.Salary</span>
+                            <input type="text" class="form-control edit-mode" value="@person.Salary" style="display:none;" />
+                        </td>
+                        <td>
+                            <button class="btn btn-primary btn-sm edit-btn">Edit</button>
+                            <button class="btn btn-primary btn-sm cancel-btn" style="display:none;">Cancel</button>
+                            <button class="btn btn-primary btn-sm save-btn" style="display:none;">Save</button>
+                            <button class="btn btn-danger btn-sm delete-btn">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css" />
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.15/sorting/custom-data-source/dom-text.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#personsTable').DataTable();
+
+            // Edit button click handler
+            $('.edit-btn').click(function () {
+                var row = $(this).closest('tr');
+                row.find('.read-only').hide();
+                row.find('.edit-mode').show();
+                row.find('.edit-btn').hide();
+                row.find('.save-btn, .cancel-btn').show();
+            });
+
+            // Cancel button click handler
+            $('.cancel-btn').click(function () {
+                var row = $(this).closest('tr');
+                row.find('.edit-mode').hide();
+                row.find('.read-only').show();
+                row.find('.edit-btn').show();
+                row.find('.save-btn, .cancel-btn').hide();
+            });
+
+            // Save button click handler
+            $('.save-btn').click(function () {
+                var row = $(this).closest('tr');
+                var id = row.data('id');
+                var name = row.find('td:eq(1) input').val();
+                var dateOfBirth = row.find('td:eq(2) input').val();
+                var married = row.find('td:eq(3) select').val() === 'true';
+                var phone = row.find('td:eq(4) input').val();
+                var salary = row.find('td:eq(5) input').val();
+
+                $.ajax({
+                    url: '@Url.Action("UpdatePerson", "person")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        Id: id,
+                        Name: name,
+                        DateOfBirth: new Date(dateOfBirth).toISOString(),
+                        Maried: married,
+                        Phone: phone,
+                        Salary: salary
+                    }),
+                    success: function (result) {
+                        row.find('.read-only').each(function () {
+                            var field = $(this);
+                            var fieldName = field.next('.edit-mode').attr('name');
+                            var newValue = row.find(`input[name="${fieldName}"]`).val();
+                            field.text(newValue);
+                        });
+
+                        row.find('.edit-mode').hide();
+                        row.find('.read-only').show();
+                        row.find('.edit-btn').show();
+                        row.find('.save-btn, .cancel-btn').hide();
+                    },
+                    error: function () {
+                        alert('Error updating record.');
+                    }
+                });
+            });
+
+            // Delete button click handler
+            $('.delete-btn').click(function () {
+                var row = $(this).closest('tr');
+                var id = row.data('id');
+
+                if (confirm('Are you sure you want to delete this record?')) {
+                    $.ajax({
+                        url: '@Url.Action("DeletePerson", "person")?id=' + encodeURIComponent(id),
+                        type: 'DELETE',
+                        //data: { id: id },
+                        success: function (result) {
+                            row.remove();
+                            alert('Record deleted successfully.');
+                        },
+                        error: function () {
+                            alert('Error deleting record.');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
