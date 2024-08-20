@@ -117,6 +117,12 @@
                             field.text(newValue);
                         });
 
+                        row.find('td:eq(1) .read-only').text(name);
+                        row.find('td:eq(2) .read-only').text(new Date(dateOfBirth).toLocaleDateString()); // Format as needed
+                        row.find('td:eq(3) .read-only').text(married ? 'Yes' : 'No');
+                        row.find('td:eq(4) .read-only').text(phone);
+                        row.find('td:eq(5) .read-only').text(salary);
+
                         row.find('.edit-mode').hide();
                         row.find('.read-only').show();
                         row.find('.edit-btn').show();
